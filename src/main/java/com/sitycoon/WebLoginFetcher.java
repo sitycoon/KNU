@@ -1,8 +1,6 @@
 package com.sitycoon;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -15,10 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-
 import javax.net.ssl.SSLContext;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.CookieStore;
@@ -31,6 +26,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
+
+
 
 public class WebLoginFetcher {
 	public static boolean isValidDateRange(String startDt, String endDt) {
@@ -46,6 +43,17 @@ public class WebLoginFetcher {
 		 * CookieStore cookieStore = new BasicCookieStore(); try (CloseableHttpClient
 		 * client = HttpClients.custom().setDefaultCookieStore(cookieStore).build()) {
 		 */
+		String mberId   = System.getenv("MBER_ID");
+		String password = System.getenv("PASSWORD");
+		String startDt  = System.getenv("START_DT");
+		String endDt    = System.getenv("END_DT");
+
+		// null 체크(예: 미지정 시 메시지 출력) ― 필요하면 생략 가능
+		if (mberId == null || password == null || startDt == null || endDt == null) {
+				System.err.println("필수 환경변수가 하나 이상 누락되었습니다.");
+				return;
+		}
+		
 		CookieStore cookieStore = new BasicCookieStore();
 		SSLContext sslContext = SSLContextBuilder.create()
 				.loadTrustMaterial(null, (X509Certificate[] chain, String authType) -> true).build();
@@ -60,32 +68,14 @@ public class WebLoginFetcher {
 			// 로그인 POST 요청
 			HttpPost loginPost = new HttpPost("https://human.knu.ac.kr/login/loginProc.do");
 			List<NameValuePair> loginParams = new ArrayList<>();
-			loginParams.add(new BasicNameValuePair("mberId", "sitycoon"));
-			loginParams.add(new BasicNameValuePair("password", "Kosaf123"));
+			loginParams.add(new BasicNameValuePair("mberId", mberId));
+			loginParams.add(new BasicNameValuePair("password", password));
 			loginPost.setEntity(new UrlEncodedFormEntity(loginParams));
 
 			HttpResponse loginResponse = client.execute(loginPost);
 			System.out.println("로그인 응답 코드: " + loginResponse.getStatusLine().getStatusCode());
 
 			Map<Integer, Integer> result = null;
-
-			Properties props = new Properties();
-
-			String startDt = null;
-			String endDt = null;
-			try (InputStream input = WebLoginFetcher.class.getClassLoader().getResourceAsStream("config.properties")) {
-				if (input == null) {
-					System.out.println("설정 파일을 찾을 수 없습니다.");
-					return;
-				}
-				props.load(input);
-				startDt = props.getProperty("startDt");
-				endDt = props.getProperty("endDt");
-				System.out.println("startDt: " + startDt);
-				System.out.println("endDt: " + endDt);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 
 			while (true && isValidDateRange(startDt, endDt)) {
 				HttpPost checkPost = new HttpPost("https://human.knu.ac.kr/fcReservation/selectResProductList.do");
