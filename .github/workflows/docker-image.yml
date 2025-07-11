@@ -27,4 +27,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: yourdockerhubusername/web-login-fetcher:latest
+          tags: sitycoon/web-login-fetcher:latest
